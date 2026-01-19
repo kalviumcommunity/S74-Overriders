@@ -213,6 +213,74 @@ Ensures consistent and reproducible builds
 Allows safe automation of deployments
 Enables quick secret rotation without code changes
 
+
+---
+
+## Database Schema Design
+
+### Core Entities
+
+* **User**: Registered user of the application.
+* **Project**: Created and owned by a user.
+* **Task**: Individual task under a project.
+
+### Prisma Schema
+
+```prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  projects  Project[]
+}
+
+model Project {
+  id      Int     @id @default(autoincrement())
+  title   String
+  userId  Int
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([userId])
+}
+
+model Task {
+  id        Int     @id @default(autoincrement())
+  title     String
+  completed Boolean @default(false)
+  projectId Int
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+```
+
+### Relationships & Constraints
+
+* One User → Many Projects
+* One Project → Many Tasks
+* Foreign keys enforce referential integrity
+* `ON DELETE CASCADE` prevents orphan records
+* Unique constraint on user email
+* Indexed foreign keys improve query performance
+
+### Normalization
+
+The schema follows **3NF**, avoiding redundancy and ensuring all non-key attributes depend only on their primary keys.
+
+### Migrations
+
+Tables were created using Prisma migrations:
+
+```bash
+npx prisma migrate dev --name init_schema
+```
+
+Seed data was added to validate relationships.
+
+---
+
+
 ##  Tech Stack
 
 **Frontend:** Next.js (TypeScript)
