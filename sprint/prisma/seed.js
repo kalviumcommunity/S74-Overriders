@@ -1,24 +1,22 @@
 import { PrismaClient } from "@prisma/client";
+
 const prisma = new PrismaClient();
 
 async function main() {
-  const user = await prisma.user.create({
-    data: {
-      name: "Amulya",
-      email: "amulya@example.com",
-      projects: {
-        create: {
-          name: "Crafts from Roots",
-          tasks: {
-            create: [
-              { title: "Design DB Schema", status: "DONE" },
-              { title: "Write Prisma Models", status: "IN_PROGRESS" }
-            ]
-          }
-        }
-      }
-    }
+  await prisma.user.createMany({
+    data: [
+      { name: "Alice", email: "alice@example.com" },
+      { name: "Bob", email: "bob@example.com" }
+    ],
+    skipDuplicates: true
   });
 }
 
-main().finally(() => prisma.$disconnect());
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
