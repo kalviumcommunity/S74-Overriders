@@ -1,47 +1,52 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { ZodError } from "zod";
+import { userSchema } from "@/lib/schemas/userSchema";
 
-let tasks = [
-  { id: 1, title: 'Learn Next.js', completed: false },
-  { id: 2, title: 'Build REST API', completed: true },
+let users = [
+  { id: 1, name: "John", email: "john@example.com", age: 25 },
+  { id: 2, name: "Jane", email: "jane@example.com", age: 30 },
 ];
 
-// GET /api/tasks
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const page = Number(searchParams.get('page')) || 1;
-  const limit = Number(searchParams.get('limit')) || 10;
-
-  const start = (page - 1) * limit;
-  const data = tasks.slice(start, start + limit);
-
-  return NextResponse.json({
-    page,
-    limit,
-    data,
-  });
-}
-
-// POST /api/tasks
+// POST /api/users
 export async function POST(req: Request) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  if (!body.title) {
+    // ✅ Zod validation happens HERE
+    const data = userSchema.parse(body);
+
+    const newUser = {
+      id: users.length + 1,
+      name: data.name,
+      email: data.email,
+      age: data.age,
+    };
+
+    users.push(newUser);
+
     return NextResponse.json(
-      { error: 'Title is required' },
+      { success: true, message: "User created", data: newUser },
+      { status: 201 }
+    );
+} catch (error) {
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Validation Error",
+        errors: error.issues.map((e) => ({
+          field: e.path[0],
+          message: e.message,
+        })),
+      },
       { status: 400 }
     );
   }
 
-  const newTask = {
-    id: tasks.length + 1,
-    title: body.title,
-    completed: false,
-  };
-
-  tasks.push(newTask);
-
   return NextResponse.json(
-    { message: 'Task created', data: newTask },
-    { status: 201 }
+    { success: false, message: "Internal Error" },
+    { status: 500 }
   );
+  
+  }
 }
