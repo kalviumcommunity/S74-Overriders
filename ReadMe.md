@@ -164,6 +164,30 @@ Next.js provides **three rendering strategies**, each with trade-offs:
 
 ---
 
+## Redis Caching Integration
+
+Redis is used as a caching layer to improve API performance.
+
+### Cached Endpoint
+- GET /api/users
+
+### Strategy
+- Cache-aside pattern
+- Redis checked before database
+- TTL set to 60 seconds
+
+### Cache Invalidation
+- Cache key `users:list` is deleted on POST
+- Ensures data freshness
+
+### Performance Results
+- Cold request (DB): ~120ms
+- Warm request (Redis): ~10ms
+
+### Reflection
+A stale cache is worse than no cache because it can mislead users. By using TTLs and explicit invalidation on write operations, the application maintains both performance and data accuracy.
+
+
 ### Why is environment segregation (development, staging, production) essential in modern deployments, and how does secure secret management improve the safety and reliability of your CI/CD pipelines?
 
 Modern applications like CraftsfromRoots, deployed using Docker, cloud platforms (AWS/Azure), and GitHub Actions, require strict separation of environments and secure handling of secrets to remain safe, stable, and scalable.
