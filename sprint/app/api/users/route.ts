@@ -1,44 +1,29 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { userSchema } from "@/lib/schemas/userSchema";
+import { handleError } from "@/lib/errorHandler";
 
 let users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
+  { id: 1, name: "John", email: "john@example.com", age: 25 },
+  { id: 2, name: "Jane", email: "jane@example.com", age: 30 },
 ];
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const page = Number(searchParams.get('page')) || 1;
-  const limit = Number(searchParams.get('limit')) || 10;
-
-  const start = (page - 1) * limit;
-  const paginatedUsers = users.slice(start, start + limit);
-
-  return NextResponse.json({
-    page,
-    limit,
-    data: paginatedUsers,
-  });
-}
-
 export async function POST(req: Request) {
-  const body = await req.json();
+  try {
+    const body = await req.json();
+    const data = userSchema.parse(body);
 
-  if (!body.name) {
+    const newUser = {
+      id: users.length + 1,
+      ...data,
+    };
+
+    users.push(newUser);
+
     return NextResponse.json(
-      { error: 'Name is required' },
-      { status: 400 }
+      { success: true, data: newUser },
+      { status: 201 }
     );
+  } catch (error) {
+    return handleError(error, "POST /api/users");
   }
-
-  const newUser = {
-    id: users.length + 1,
-    name: body.name,
-  };
-
-  users.push(newUser);
-
-  return NextResponse.json(
-    { message: 'User created', data: newUser },
-    { status: 201 }
-  );
 }
