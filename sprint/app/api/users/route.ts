@@ -1,29 +1,26 @@
-import { NextResponse } from "next/server";
-import { userSchema } from "@/lib/schemas/userSchema";
-import { handleError } from "@/lib/errorHandler";
+import { NextResponse } from 'next/server'
+import { getUserFromRequest } from '@/lib/auth/getUserFromRequest'
+import { hasPermission } from '@/lib/rbac/checkPermission'
 
-let users = [
-  { id: 1, name: "John", email: "john@example.com", age: 25 },
-  { id: 2, name: "Jane", email: "jane@example.com", age: 30 },
-];
+export async function DELETE(req: Request) {
+  const user = getUserFromRequest(req)
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const data = userSchema.parse(body);
-
-    const newUser = {
-      id: users.length + 1,
-      ...data,
-    };
-
-    users.push(newUser);
-
+  if (!user) {
     return NextResponse.json(
-      { success: true, data: newUser },
-      { status: 201 }
-    );
-  } catch (error) {
-    return handleError(error, "POST /api/users");
+      { success: false, message: 'Unauthorized' },
+      { status: 401 }
+    )
   }
+
+  if (!hasPermission(user.role, 'delete')) {
+    return NextResponse.json(
+      { success: false, message: 'Forbidden' },
+      { status: 403 }
+    )
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: 'User deleted',
+  })
 }
