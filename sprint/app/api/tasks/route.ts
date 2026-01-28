@@ -52,6 +52,6 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (err) {
-    return handleError(err);
-  }
+  return handleError(err, "POST /api/tasks");
+}
 }

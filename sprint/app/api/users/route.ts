@@ -1,26 +1,20 @@
-import { NextResponse } from 'next/server'
-import { getUserFromRequest } from '@/lib/auth/getUserFromRequest'
-import { hasPermission } from '@/lib/rbac/checkPermission'
+import { NextResponse } from "next/server";
+import { verifyToken } from "@/lib/auth";
 
-export async function DELETE(req: Request) {
-  const user = getUserFromRequest(req)
+export async function GET(req: Request) {
+  try {
+    const authHeader = req.headers.get("authorization");
+    const user = verifyToken(authHeader);
 
-  if (!user) {
+    return NextResponse.json({
+      success: true,
+      message: "Protected data access granted",
+      user,
+    });
+  } catch {
     return NextResponse.json(
-      { success: false, message: 'Unauthorized' },
+      { message: "Unauthorized" },
       { status: 401 }
-    )
+    );
   }
-
-  if (!hasPermission(user.role, 'delete')) {
-    return NextResponse.json(
-      { success: false, message: 'Forbidden' },
-      { status: 403 }
-    )
-  }
-
-  return NextResponse.json({
-    success: true,
-    message: 'User deleted',
-  })
 }
