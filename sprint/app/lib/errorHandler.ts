@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { logger } from "./logger";
 
-export function handleError(error: unknown, context: string) {
+export function handleError(error: unknown, context = "Unknown context") {
   const isProd = process.env.NODE_ENV === "production";
 
   if (error instanceof ZodError) {
