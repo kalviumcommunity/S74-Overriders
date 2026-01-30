@@ -280,6 +280,293 @@ Seed data was added to validate relationships.
 
 ---
 
+# Input Validation with Zod
+
+Zod schemas were implemented for validating POST and PUT API routes to ensure incoming data is correctly typed and complete before processing. Validation logic is centralized inside reusable schema files under lib/schemas, enabling reuse across server routes and client forms.
+
+Invalid requests return structured error responses with field-level messages, improving API reliability and developer experience. This approach prevents malformed data from reaching the database and enforces consistent data contracts across the application.
+
+![success](image-1.png)
+
+![error message](image.png)
+
+---
+
+# Centralized Error Handling
+
+This project uses a centralized error handler to ensure all API errors are handled consistently. Validation and runtime errors are logged in a structured format for easier debugging while returning safe, user-friendly responses to the client. In development mode, detailed error information is available for debugging, whereas in production only generic messages are exposed to avoid leaking sensitive details. This improves reliability, security, and developer efficiency as the application scales.
+
+---
+
+## Role-Based Access Control (RBAC)
+
+### Roles & Permissions
+
+| Role   | Permissions                    |
+|------- |--------------------------------|
+| Admin  | create, read, update, delete   |
+| Editor | read, update                   |
+| Viewer | read                            |
+
+### Access Evaluation Logic
+- User role is derived from session/JWT (mocked for this task)
+- Every API action checks permission before execution
+- Unauthorized access returns HTTP 403
+- All allow/deny decisions are logged
+
+### Audit Logs
+Example:
+[RBAC] EDITOR tried CREATE: DENIED  
+[RBAC] ADMIN tried DELETE: ALLOWED  
+
+### Reflection
+This RBAC system centralizes authorization logic, making it scalable and auditable.
+It can evolve into policy-based access control (PBAC) by introducing contextual
+rules such as resource ownership, time-based access, or attribute-based policies.
+
+![proof1](rbac-2.png)
+
+![proof2](rbac-3.png)
+
+![ui proof](rbac-4.png)
+---
+
+Authentication Flow
+
+User signs up → password hashed with bcrypt
+
+User logs in → password verified → JWT issued
+
+JWT sent in Authorization header to access protected routes
+
+bcrypt Usage
+const hash = await bcrypt.hash(password, 10);
+const isValid = await bcrypt.compare(password, hash);
+
+JWT Usage
+jwt.sign({ id, email }, JWT_SECRET, { expiresIn: "1h" });
+jwt.verify(token, JWT_SECRET);
+
+Token Expiry & Refresh
+
+Short-lived tokens reduce attack surface
+
+Refresh tokens can be introduced for long sessions
+
+Token rotation improves security
+
+Token Storage
+
+HTTP-only cookies → safest (XSS-resistant)
+
+localStorage → simple but XSS-prone
+
+Authorization headers → clean API separation
+
+Security Benefits
+
+Passwords never stored in plaintext
+
+Stateless authentication scales horizontally
+
+JWT enables fine-grained access control
+
+---
+
+
+# Redis Caching Integration (Next.js + Prisma)
+
+## Overview
+
+To improve API performance and reduce unnecessary database queries, Redis was integrated as an in-memory caching layer in this Next.js application. A cache-aside pattern was implemented, allowing frequently accessed data to be served quickly while maintaining consistency with the primary PostgreSQL database.
+
+This approach reduces response latency for repeated requests and optimizes overall backend efficiency.
+
+---
+
+## Redis Setup
+
+Redis is run locally using Docker and connected using the `ioredis` client.
+
+### Redis Client Configuration
+
+```ts
+// app/lib/redis.ts
+import Redis from "ioredis";
+
+const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+
+export default redis;
+```
+
+---
+
+## Caching Strategy (Cache-Aside Pattern)
+
+The cache-aside pattern is implemented as follows:
+
+1. Check Redis for cached data.
+2. If cached data exists, return it immediately.
+3. If cached data does not exist, fetch data from the database.
+4. Store the fetched data in Redis with a defined TTL.
+5. Return the response to the client.
+
+This ensures that Redis remains a performance optimization layer rather than a source of truth.
+
+---
+
+## Cached Resource
+
+### Resource Cached
+
+* Endpoint: `GET /api/users`
+* Data: List of users
+
+### Rationale
+
+* Frequently accessed endpoint
+* Read-heavy workload
+* Database queries are more expensive than Redis lookups
+* Ideal candidate for caching
+
+---
+
+## API Route with Redis Caching
+
+### Cache Read and Write Logic
+
+```ts
+// app/api/users/route.ts
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import redis from "@/lib/redis";
+
+export async function GET() {
+  const cacheKey = "users:list";
+
+  const cached = await redis.get(cacheKey);
+  if (cached) {
+    console.log("Cache Hit");
+    return NextResponse.json(JSON.parse(cached));
+  }
+
+  console.log("Cache Miss - Fetching from DB");
+  const users = await prisma.user.findMany();
+
+  await redis.set(cacheKey, JSON.stringify(users), "EX", 60);
+
+  return NextResponse.json(users);
+}
+```
+
+---
+
+## Cache Invalidation Strategy
+
+To prevent stale data, the cache is invalidated whenever user data is modified.
+
+### Example Invalidation Logic
+
+```ts
+await redis.del("users:list");
+```
+
+This ensures that subsequent requests fetch fresh data from the database before repopulating the cache.
+
+---
+
+## TTL (Time-To-Live) Policy
+
+* TTL Duration: 60 seconds
+* Reasoning:
+
+  * Balances performance and data freshness
+  * Prevents stale data from persisting indefinitely
+  * Suitable for moderately changing datasets
+
+Redis automatically removes expired entries, reducing manual cache maintenance.
+
+---
+
+## Performance Comparison
+
+### Cache Miss (Cold Request)
+
+Command:
+
+```bash
+Invoke-RestMethod http://localhost:3000/api/users
+```
+
+Log Output:
+
+```
+Cache Miss - Fetching from DB
+Response time: ~1000 ms
+```
+
+---
+
+### Cache Hit (Warm Request)
+
+Command:
+
+```bash
+Invoke-RestMethod http://localhost:3000/api/users
+```
+
+Log Output:
+
+```
+Cache Hit
+Response time: ~10–15 ms
+```
+
+This demonstrates a significant reduction in response time for repeated requests.
+
+---
+
+## Cache Coherence and Data Consistency
+
+Cache coherence is maintained through:
+
+* Explicit cache invalidation on write operations
+* Short TTL values to enforce automatic refresh
+* Database-level constraints enforced by Prisma and PostgreSQL
+
+This combination ensures consistency between cached data and persistent storage.
+
+---
+
+## Risks of Stale Data and Mitigation
+
+### Potential Risks
+
+* Cached data becoming outdated after write operations
+* Multiple updates occurring within the TTL window
+
+### Mitigation Measures
+
+* Cache invalidation on create, update, and delete operations
+* Conservative TTL duration
+* Cache-aside pattern to ensure database remains the source of truth
+
+These measures minimize the likelihood of serving stale data.
+
+---
+
+## Conclusion
+
+By integrating Redis as a caching layer, the application achieves:
+
+* Reduced API response times
+* Lower database load
+* Improved scalability for read-heavy workloads
+
+This implementation reflects a production-oriented caching strategy aligned with real-world backend system design.
+
+---
+
 
 ##  Tech Stack
 
