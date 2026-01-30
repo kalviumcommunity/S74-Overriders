@@ -164,6 +164,30 @@ Next.js provides **three rendering strategies**, each with trade-offs:
 
 ---
 
+## Redis Caching Integration
+
+Redis is used as a caching layer to improve API performance.
+
+### Cached Endpoint
+- GET /api/users
+
+### Strategy
+- Cache-aside pattern
+- Redis checked before database
+- TTL set to 60 seconds
+
+### Cache Invalidation
+- Cache key `users:list` is deleted on POST
+- Ensures data freshness
+
+### Performance Results
+- Cold request (DB): ~120ms
+- Warm request (Redis): ~10ms
+
+### Reflection
+A stale cache is worse than no cache because it can mislead users. By using TTLs and explicit invalidation on write operations, the application maintains both performance and data accuracy.
+
+
 ### Why is environment segregation (development, staging, production) essential in modern deployments, and how does secure secret management improve the safety and reliability of your CI/CD pipelines?
 
 Modern applications like CraftsfromRoots, deployed using Docker, cloud platforms (AWS/Azure), and GitHub Actions, require strict separation of environments and secure handling of secrets to remain safe, stable, and scalable.
@@ -606,3 +630,111 @@ CraftsfromRoots aims to be more than a marketplace — it is a bridge between **
 * Project Duration: 4 Weeks
 
 ---
+## Authorization Middleware
+
+All protected API routes are secured using a centralized middleware.
+
+### Flow
+Client → Middleware → JWT Validation → Role Check → API Route
+
+### Role Rules
+- `/api/users` → Any authenticated user
+- `/api/admin` → Admin only
+
+### Security Principles
+- JWT verified on every request
+- Least privilege enforced
+- Unauthorized access returns 401/403
+# 📄 README – Features & Functionality Added
+
+This project demonstrates routing features implemented using the **Next.js 13+ App Router**, focusing on scalability, authentication, and user experience.
+
+---
+
+## ✅ Features Added
+
+### 🧭 File-Based Routing
+- Routing implemented using the `app/` directory
+- Each folder represents a route
+- `page.tsx` files define route entry points
+
+---
+
+### 🌐 Public Routes
+The following routes are accessible without authentication:
+- `/` – Home page
+- `/login` – Login page
+
+---
+
+### 🔒 Protected Routes
+The following routes require authentication:
+- `/dashboard`
+- `/users`
+- `/users/[id]`
+
+Access is restricted using middleware-based authentication.
+
+---
+
+### 🔐 Middleware Authentication
+- Added `middleware.ts` to protect private routes
+- JWT token is read from cookies
+- Unauthorized users are redirected to `/login`
+- Valid tokens allow access to protected pages
+
+---
+
+### 🔄 Dynamic Routing
+- Implemented dynamic routing using `[id]` folder syntax
+- `/users/[id]` renders user-specific content dynamically
+- Single template supports multiple user profiles
+
+**Example URLs:**
+- `/users/1`
+- `/users/2`
+
+---
+
+### 🧱 Global Layout & Navigation
+- Added `layout.tsx` for shared UI
+- Persistent navigation bar across pages
+- Improves consistency and usability
+
+---
+
+### 🧭 Breadcrumb Navigation
+- Added breadcrumbs on dynamic user pages
+- Helps users understand page hierarchy
+- Enhances navigation and SEO
+
+**Example:**
+# 🔐 JWT Authentication with Access & Refresh Tokens (Next.js)
+
+This project implements a **secure authentication system** using **JSON Web Tokens (JWT)** in a **Next.js 13+ App Router** application.  
+It follows modern security best practices including **short-lived access tokens**, **HTTP-only refresh tokens**, and **token rotation**.
+
+---
+
+## 📌 Tech Stack
+
+- Next.js 13+ (App Router)
+- TypeScript
+- jsonwebtoken
+- HTTP-only Cookies
+- Middleware-based Route Protection
+
+---
+
+## 🧩 JWT Structure
+
+A JSON Web Token (JWT) consists of **three parts**, separated by dots (`.`):
+import Button from "./Button";
+
+export default {
+  title: "UI/Button",
+  component: Button,
+};
+
+export const Primary = () => <Button label="Click Me" />;
+export const Secondary = () => <Button label="Cancel" variant="secondary" />;

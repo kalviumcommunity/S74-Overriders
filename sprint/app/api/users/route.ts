@@ -1,44 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import redis from "@/lib/redis";
 
-let users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' },
-];
+export async function GET() {
+  const cacheKey = "users:list";
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const page = Number(searchParams.get('page')) || 1;
-  const limit = Number(searchParams.get('limit')) || 10;
-
-  const start = (page - 1) * limit;
-  const paginatedUsers = users.slice(start, start + limit);
-
-  return NextResponse.json({
-    page,
-    limit,
-    data: paginatedUsers,
-  });
-}
-
-export async function POST(req: Request) {
-  const body = await req.json();
-
-  if (!body.name) {
-    return NextResponse.json(
-      { error: 'Name is required' },
-      { status: 400 }
-    );
+  // Check cache
+  const cachedUsers = await redis.get(cacheKey);
+  if (cachedUsers) {
+    console.log("⚡ Cache Hit");
+    return NextResponse.json(JSON.parse(cachedUsers));
   }
 
-  const newUser = {
-    id: users.length + 1,
-    name: body.name,
-  };
+  // Cache miss → DB
+  console.log("Cache Miss - Fetching from DB");
+  const users = await prisma.user.findMany();
 
-  users.push(newUser);
+  // Save to cache with TTL
+  await redis.set(cacheKey, JSON.stringify(users), "EX", 60);
 
-  return NextResponse.json(
-    { message: 'User created', data: newUser },
-    { status: 201 }
-  );
+  return NextResponse.json(users);
 }

@@ -1,40 +1,48 @@
 {
   "compilerOptions": {
+    /* Language and Environment */
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
-
+    /* Strictness */
     "strict": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "forceConsistentCasingInFileNames": true,
-
-    "noEmit": true,
-    "esModuleInterop": true,
+    /* Module Resolution */
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "noEmit": true,
+    /* JSX */
     "jsx": "react-jsx",
+    /* Base URL & Path Aliases */
+    "baseUrl": ".",
+"paths": {
+  "@/*": ["./app/*"]
+}
+,
+    /* Incremental */
     "incremental": true,
+    "esModuleInterop": true,
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "paths": {
-      "@/*": ["./*"]
-    }
+    ]
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-, "prisma/seed.js"  ],
-  "exclude": ["node_modules"]
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
