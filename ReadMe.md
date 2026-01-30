@@ -422,3 +422,32 @@ Access is restricted using middleware-based authentication.
 - Enhances navigation and SEO
 
 **Example:**
+# 🔐 JWT Authentication with Access & Refresh Tokens (Next.js)
+
+This project implements a **secure authentication system** using **JSON Web Tokens (JWT)** in a **Next.js 13+ App Router** application.  
+It follows modern security best practices including **short-lived access tokens**, **HTTP-only refresh tokens**, and **token rotation**.
+
+---
+
+## 📌 Tech Stack
+
+- Next.js 13+ (App Router)
+- TypeScript
+- jsonwebtoken
+- HTTP-only Cookies
+- Middleware-based Route Protection
+
+---
+
+## 🧩 JWT Structure
+
+A JSON Web Token (JWT) consists of **three parts**, separated by dots (`.`):
+import Button from "./Button";
+
+export default {
+  title: "UI/Button",
+  component: Button,
+};
+
+export const Primary = () => <Button label="Click Me" />;
+export const Secondary = () => <Button label="Cancel" variant="secondary" />;
