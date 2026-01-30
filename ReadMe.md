@@ -261,6 +261,17 @@ Enables quick secret rotation without code changes
 
 ---
 
+Email Service Integration (SendGrid)
+Provider Choice
+
+We used SendGrid for transactional email delivery due to its ease of setup, generous free tier, and reliable delivery tracking.
+
+Setup
+
+Verified sender email via SendGrid dashboard
+
+API key stored securely in .env.local
+
 ##  Vision
 
 CraftsfromRoots aims to be more than a marketplace — it is a bridge between **hands that create** and **hearts that value authenticity**.
