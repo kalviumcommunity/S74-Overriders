@@ -21,3 +21,33 @@ export async function GET() {
 
   return NextResponse.json(users);
 }
+
+export async function POST(request: Request) {
+  try {
+    const { name, email } = await request.json();
+
+    if (!name || !email) {
+      return NextResponse.json(
+        { error: "Name and email are required" },
+        { status: 400 }
+      );
+    }
+
+    // Create user in database
+    const user = await prisma.user.create({
+      data: { name, email },
+    });
+
+    // Invalidate cache
+    await redis.del("users:list");
+    console.log("🗑️ Cache invalidated after user creation");
+
+    return NextResponse.json(user, { status: 201 });
+  } catch (error) {
+    console.error("Error creating user:", error);
+    return NextResponse.json(
+      { error: "Failed to create user" },
+      { status: 500 }
+    );
+  }
+}
